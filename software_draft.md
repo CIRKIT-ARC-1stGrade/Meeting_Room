@@ -1,26 +1,17 @@
 # ソフトウェアについて簡単に説明    
-（来てくれている一回生のために）  
-  
-## ROS Kinetic Kame で開発  
-  
-ソフト構成  
-  
-* navigation  
-* gmapping  
-* yp-spur (モータ駆動)　<- モータに直接司令を出している  
-* urg\_node(LRFドライバ)  <-  センサからの情報受け取り  
-  
+来てくれている一回生のために  
+
 ## 自立移動に必要な機能とは。。  
   
-* 地図を作成  
+* 地図作成  
   
 * コース取りをあらかじめ設定(waypoint)  
   
-* 障害物を回避する動作  
+* ゴールへ向かったり障害物を回避したりする動作  
   
 ## 具体的には。。  
   
-1. 自分のシルエットや各パーツの位置関係 (Transform   Configuration (tf))
+1. 自分のシルエットや各パーツの位置関係 (Transform   Configuration (tf))  
 2. （赤外線でスキャニングしながら検出物までの距離を測定する）  
    センサーの読み取り(Sensor Information)  
 3. コンピューター上でのシュミレートと実際の動作の一致(Odometry Information)  
@@ -35,16 +26,25 @@
 4. ypspur\_ros\_bridge  
 5. yp-spur　<-- C言語  
   
-<既存のプログラム(PKG)を再利用できるので１から全部を作る必  要がない>  
+<既存のプログラム(PKG)を再利用できるので１から全部を作る必要がない>  
 --> ROSのいいところ    
   
 作らなきゃ。    
 1. tfのデータ設定　　set\_up launch  
 2. goal sender(goalはnavigationに渡す目標位置  
-3. teleop  
-  
+3. teleop    
   
 yp-spur以外、先輩らが全部作ったのかと思っていました    
+  
+## ROS Kinetic Kame で開発  
+  
+ソフト構成  
+  
+* navigation(move\_base(経路計画とナビゲーション), amcl(地図とセンサから自己位置推定), map\_server(地図管理))  
+* slam\_gmapping(gmapping(自己位置とセンサから地図を作成))  
+* yp-spur(モータに直接司令を出している)  
+* urg\_node(LRFドライバ)(センサからの情報受け取り)  
+ 
   
 # fifth\_robot\_pkg  
   
@@ -90,15 +90,15 @@ teleop\_master\_node.cpp <- node
   
 joy  
 |  
-|  joystickの情報[膨大なデータ] <- param(to  pic)
+|  joystickの情報[膨大なデータ] <- param(to  pic)  
+|  
+V   
+teleop\_twist\_joy[cmd\_velとして必要なも  のを抽出]  
+|  
+|  source(cmd\_vel)  <- param(topi  c)  
 |  
 V  
-teleop\_twist\_joy[cmd\_velとして必要なも  のを抽出]
-|  
-|  source(cmd\_vel)  <- param(topi  c)
-|  
-V  
-teleop\_master\_node[周波数を落として受け流す]   <- バグ防止
+teleop\_master\_node[周波数を落として受け流す]   <- バグ防止  
 |  
 |  cmd\_vel  <- param(topic)  
 |  
