@@ -98,10 +98,10 @@ T-flog Projectが公開しているi-Cart mini というロボットフレーム
    - 地図と周りの状況を照らし合わせる  
 2. 地図を作成する  
 3. センサーから周りの状況を読み取る  
-4. 障害物に対しどう動くかを判断する  
+4. 障害物、目的地に対しどう動くかを判断する  
    - 自分のシルエットや各パーツとの位置関係を把握する  
 5. 何を目標に走行すればよいのかを把握する  
-6. コントローラーからの司令の読み取り  
+6. コントローラーからの命令の読み取り  
 7. モーターを動かす  
     
 ### 7. モータを動かす  
@@ -111,48 +111,111 @@ T-flog Projectが公開しているi-Cart mini というロボットフレーム
     - ROSとは別物  
     - これとモータードライバでモーターに直接命令を出す  
 * ypspur\_ros\_bridge  
-    - ROSからの命令(cmd_vel)をyp-spurに伝達する  
-    - モーターの回転数をROSに伝達する（オドメトリ）  
     - 橋渡しの役割  
+    - ROSからの動力への命令(cmd_vel)をyp-spurに伝達する  
+    - モーターの回転数をROSに伝達する（オドメトリ）  
   
 ### 3. センサーから周りの状況を読み取る  
 * urg\_node  
-    - センサーからの情報を取得・伝達  
-  
+    - センサーからの情報を取得・伝達    
   
 ### 2. 地図を作成する  
-* slam\_gmapping/gmapping  
+* slam\_gmapping/gmapping(package)  
     - センサーの値とオドメトリから地図を作成  
-  
-  
+    - 自己位置と地図を同時に推定することをＳＬＡＭ
+### 6 コントローラーからの命令の読み取り
+1. joy (node)
+   - 外部からの入力をjoy_stick(コントローラー)から受け取る
+   - あらゆるボタンから、押し方の強さまでを数値として読み取る
+2. teleop\_twist\_joy (node)
+   - teleopに必要な情報に絞る
+3. teleop_master (node)
+   - 周波数を100/sに落として、バグ防止
+4. ypspur\_ros\_bridge
+   - 1~3の処理を施されたデータ(cmd_vel)をyp-spurへ伝達
+
+### 1. 自分がどこにいるのかを判断する（自己位置推定）  
+* yp-spur/ypspur\_ros\_bridge
+    -  モーターの回転数から計算する（オドメトリ）  
+    - タイヤ半径などのパラメータ設定を誤るとズレが生じる
+* amcl(package)
+    - 地図と周りの状況を照らし合わせることでより制度の高い自己位置推定  
+
+### 5. 何を目標に走行すればよいのかを把握する  
+* goal\_sender\_node
+    - 決められた道順に沿って走行するために、waypointを設定する
+    - navigationはgoalしか受け付けないので
+    - ある程度ゴールに近づいたらgoalを更新するような仕組みにすることで  
+      waypointを実装することができる
+
+### 4. 障害物、目的地に対しどう動くかを判断する  
+自分のシルエット(footprint)や各パーツとの位置関係(tf)を把握する  
+
+* move_base
+
+costmap:環境のマップにグリッドをかけ、そのグリッドのセルに危険度に応じた数値を置いたもの
+
+* local_costmap  ロボットを中央に据えた移動式の小さなグリッド 
+* global_costmap ロボットの置かれた環境全体の大きなグリッド
+
+* global_planner 移動計画の立案
+* local_planner  ロボット近傍の障害物回避
+
+* rotate_recovery 詰み状態から復帰する策を模索する
+
 ## 基本構造  
   
 ROS ver Kinetic  
   
 * navigation  
-  
     - move\_base  
     - amcl  
     - map_server  
-  
 * slam\_gmapping  
-  
     - gmapping  
-  
 * yp-spur  
-  
 * urg\_node  
+
+# fifth\_robot\_pkg  
   
+fifth_\*は基本的に設定ファイル    
+  
+## fifth\_robot\_2nav/  
+設定ファイルが主  
+* 直進速度  
+* 旋回速度  
+* 自分のシルエット(footprint)の把握  
+  
+## fifth\_robot\_launch/  
+ロボットを起動させるためのファイルが、    
+teleopやnavigationなどの機能別に分けて置いてある    
+  
+## fifth\_robot\_map/  
+navigation時に読む地図(pgm)と読む際に必要な設定ファイル  
+  
+## goal\_sender/  
+goal_sender_node(.cpp)とwaypointが座標として保存しているファイル
+
+## teleop\_master/  
+teleop\_master\_node.cpp
+
+## third\_party/  
+外部からの提供が主  
+* driver\_common from <ros-drivers>     ROS device   driversさん
+* hokuyo\_node   from <ros-drivers>  
+* ros\_waypoint\_generator from AriYuさん  
+
 # ④反省点  
   
 1. とりかかりが遅い  
 2. １回生の積極性のなさ  
 * gitを見れば先輩方が１回生に向けた説明をつけててくださったり、  
-参加募集を匂わせるようなことをissueのあちらこちらに書いてくださっていた  
--->一年は基本gitを見ていない  
-気づいていない  
-3. 部品がやや不足  
-  
+  参加募集を匂わせるようなことをissueのあちらこちらに書いてくださっていた  
+  -->一年は基本gitを見ていない  
+  気づいていない  
+3. 部品がやや不足（ネジが足りない）  
+4. パラメータ設定が不十分
+
 # ⑤今後取り入れたいこと  
 * ハード面強化  
   - タイヤを大きくする  
